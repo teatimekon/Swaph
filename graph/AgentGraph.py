@@ -21,17 +21,26 @@ class AgentGraph:
     def set_entry_agent_node(self,entry_node:str):
         self.entry_agent_node = entry_node
 
-    # 路由到下一个 agent
+    # 单轮对话中，路由到下一个 agent
     def route_to_agent(self,state):
         if "next_agent" not in state: 
             #刚开始没有消息，默认返回 entry_agent_node
             return self.entry_agent_node
         #有消息，判断消息的最后一条是不是 ai message，是则返回 END，否则返回 next_agent
-        # last_message = state["messages"][-1]
-        # if isinstance(last_message,AIMessage):
-        #     return END
+        last_message = state["messages"][-1]
+        from langchain_core.messages import AIMessage
+        from langgraph.graph import END
+        if isinstance(last_message,AIMessage):
+            return END
         print("route to agent: ",state["next_agent"])
         return state["next_agent"]
+    
+    # 路由到入口节点
+    def route_to_entry_agent(self,state):
+        if "next_agent" not in state:
+            return self.entry_agent_node
+        else:
+            return state["next_agent"]
     # 添加条件边
     # Agent有三条边：
     # 1. 路由到自己
@@ -40,7 +49,7 @@ class AgentGraph:
     def add_conditional_edges(self):
         self.graph.add_conditional_edges(
             START,
-            self.route_to_agent,
+            self.route_to_entry_agent,
         )
         for agent in self.agent_factory.get_all_agents().values():
             self.graph.add_conditional_edges(

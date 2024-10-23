@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from langchain_core.tools import BaseTool
-from typing import Callable,Annotated,Union
+from typing import Callable,Union
 from graph.state import AgentState
 from llm_new.llm_caller import LLMCaller
 from config.preprint import Colors
-from typing import Dict, Optional
+from typing import Dict
 from langchain_core.tools import StructuredTool
 from langchain_core.messages import AIMessage
 from pydantic import ConfigDict
@@ -82,12 +82,13 @@ class Agent(BaseModel):
     def invoke(self,state:AgentState):
         
         #需要用户输入问题的情况是：已经结束单轮对话 -> ai 的回答，或者没有历史消息
-        if not state.get("messages") or isinstance(state["messages"][-1],AIMessage):
-            question = input("请输入问题：")
-            state["question"] = question
-        else:
-            question = state["question"]
+        # if not state.get("messages") or isinstance(state["messages"][-1],AIMessage):
+        #     question = input("请输入问题：")
+        #     state["question"] = question
+        # else:
+        #     question = state["question"]
         
+        question = state["question"]
         query = [{"role": "user", "content": "用户的问题是：" + question}]
         if self.is_initialized:     #笨蛋写法
             self.is_initialized = False
