@@ -7,7 +7,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from graph.AgentGraph import AgentGraph
 from config.prompt_class import Prompt
 from typing import List, Dict, Any
-
+from tool import ToolRegistry
 class Swaph:
     def __init__(self):
         self.agent_factory = AgentFactory()
@@ -15,38 +15,23 @@ class Swaph:
         self.memory = MemorySaver()
         self.config = {"configurable": {"thread_id": "1"}}
 
-    @tool
-    def handle_kodo_question(self):
-        """ 
-        处理kodo相关的问题
-        """
-        print(f"{Colors.OKBLUE}handle_kodo_question{Colors.ENDC}")
-        return "处理完成！"
-
-    @tool
-    def handle_cdn_question(self, question: str):
-        """ 
-        处理cdn相关的问题
-        """
-        print(f"{Colors.OKBLUE}handle_cdn_question{Colors.ENDC}", question)
-        return "处理完成！"
 
     def create_agents(self):
         router_agent = Agent(name="router_agent",
                              model="gpt-4o-mini",
-                             next_agents=["cdn_agent", "kodo_agent"],
+                             next_agents=["search_agent", "kodo_agent"],
                              instruction="你是路由专家，能根据用户的问题，将用户的问题转移到对应的 agent",
                              sop=Prompt.get_prompt(name="router"))
         kodo_agent = Agent(name="kodo_agent",
                            model="gpt-4o-mini",
-                           tools=[self.handle_kodo_question],
-                           instruction="你是kodo的专家，能处理kodo相关的问题，例如：如何上传文件到kodo，如何下载文件到kodo，如何删除文件到kodo，如何查询文件到kodo")
-        cdn_agent = Agent(name="cdn_agent",
+                           tools=[ToolRegistry.get_tool("download_file"),ToolRegistry.get_tool("upload_file")],
+                           instruction="你是kodo的专家，能处理kodo相关的问题，例如：如何上传文件到kodo，如何下载文件到kodo，如何删除文件到kodo，如何查询文件到kodo，如何添加文件到kodo")
+        search_agent = Agent(name="search_agent",
                           model="gpt-4o-mini",
-                          tools=[self.handle_cdn_question],
-                          instruction="你是cdn的专家，能处理cdn相关的问题，例如：如何配置cdn，如何查询cdn，如何删除cdn，如何添加cdn")
+                          tools=[ToolRegistry.get_tool("search_tool")],
+                          instruction="你是搜索引擎的专家，能处理搜索引擎相关的问题，例如：如何搜索，如何查询，如何删除，如何添加")
 
-        self.agent_factory.register_all([router_agent, cdn_agent, kodo_agent])
+        self.agent_factory.register_all([router_agent, search_agent, kodo_agent])
         self.agent_factory.initialize_all()
 
     def initialize_graph(self):
@@ -61,8 +46,9 @@ class Swaph:
             f.write(graph_image)
         print(f"图片已保存为 {filename}")
 
-    def invoke(self, question: str) -> Dict[str, Any]:
-        ans = self.graph.invoke({"question": question}, config=self.config)
+    def invoke(self, question: str, conversation_id: str) -> Dict[str, Any]:
+        config = {"configurable": {"thread_id": conversation_id}}
+        ans = self.graph.invoke({"question": question}, config=config)
         return ans
 
     def pretty_print_messages(self, messages: List[Any]):
@@ -80,12 +66,12 @@ class Swaph:
             question = input("请输入问题（输入'退出'结束）: ")
             if question.lower() == '退出':
                 break
-            ans = self.invoke(question)
+            ans = self.invoke(question, "1")
             self.pretty_print_messages(ans["messages"])
             print("next_agent: ", ans["next_agent"])
 
 # 使用示例
-if __name__ == "__main__":
-    swaph = Swaph()
-    swaph.run()
+# if __name__ == "__main__":
+#     swaph = Swaph()
+#     swaph.run()
 
