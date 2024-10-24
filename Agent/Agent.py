@@ -58,9 +58,6 @@ class Agent(BaseModel):
         
         def create_transfer_func(agent):
             def transfer_func():
-                print(f"{Colors.RED}transfer_func: {agent.name}{Colors.ENDC}")
-                print(f"{Colors.RED}tool_name: transfer_to_{agent.name}{Colors.ENDC}")
-                print(f"{Colors.RED}tool_doc: 将用户的问题转移到处理 {agent.name} 问题的 agent,该 agent 的能力是：{agent.instruction}{Colors.ENDC}")
                 return agent
             return transfer_func
         
@@ -80,14 +77,7 @@ class Agent(BaseModel):
         self.llm_caller = LLMCaller(model=self.model,tools=self.tools)
         
     def invoke(self,state:AgentState):
-        
-        #需要用户输入问题的情况是：已经结束单轮对话 -> ai 的回答，或者没有历史消息
-        # if not state.get("messages") or isinstance(state["messages"][-1],AIMessage):
-        #     question = input("请输入问题：")
-        #     state["question"] = question
-        # else:
-        #     question = state["question"]
-        
+        #需要用户输入问题的情况是：已经结束单轮对话 -> ai 的回答，或者没有历史消息       
         question = state["question"]
         query = [{"role": "user", "content": "用户的问题是：" + question}]
         if self.is_initialized:     #笨蛋写法
@@ -95,11 +85,8 @@ class Agent(BaseModel):
             query = [{"role": "system", "content": self.instruction + self.sop}] + query
         history = state["messages"]
         messages = history + query
-
-        print(f"{Colors.OKBLUE}messages: {messages}{Colors.ENDC}")
         
         ai_msg = self.llm_caller.invoke(messages=messages,tool_call=True,parallel_tool_calls=False)
-        print(f"{Colors.RED}ai_msg: {ai_msg}{Colors.ENDC}")
         
         # agent 的返回有三情况：
         # 1. 调用了tool，但是是 agent 的，转移到了下一个 agent
@@ -110,13 +97,10 @@ class Agent(BaseModel):
         if hasattr(ai_msg, "tool_calls") and len(ai_msg.tool_calls) > 0:
             # 如果 ai_msg 有 tool_calls， 调用 function拿到返回值
             tool_call =  ai_msg.tool_calls[0]   #目前只选第一个 tool call（对于 agent 的情况是这样的）
-            print("tool_call",tool_call)
             func_name = tool_call["name"]
             args = tool_call["args"]
             print(f"Selected tool: {func_name}")
-            print("Tool map: ",self.tool_map)
             tool_response = self.tool_map[func_name].invoke(args)
-            print(f"{Colors.RED}tool_response: {tool_response}{Colors.ENDC}")
             # 如果返回的类型是 agent
             if isinstance(tool_response, Agent):
                 next_agent = tool_response.name
@@ -128,10 +112,8 @@ class Agent(BaseModel):
                     "content": tool_response
                 }
                 messages = messages + [ai_msg,tool_message]    #保持openai 的 Message 格式（tool 的返回值需要在 ai 的返回值后）
-                print(f"{Colors.RED}call_back_tool_message: {tool_message}{Colors.ENDC}")
                 ai_tool_msg = self.llm_caller.invoke(messages=messages,tool_call=True,parallel_tool_calls=False)
                 messages = messages + [ai_tool_msg]
-                print(f"{Colors.BOLD}ai_with_tool_msg: {ai_tool_msg.content}{Colors.ENDC}")
                 
         else:   #不调用tool，直接返回大模型的回答，结束单轮对话，记录当前 working 的 agent，标志结束 flag
             print(f"{Colors.BOLD}ai_msg: {ai_msg.content}{Colors.ENDC}")

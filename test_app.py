@@ -1,8 +1,9 @@
 import requests
 import json
-
+import time
+from config.preprint import Colors
 def test_swaph_server():
-    url = "http://localhost:5000/ask"
+    url = "http://localhost:5001/ask"
     headers = {"Content-Type": "application/json"}
 
     questions = [
@@ -13,7 +14,10 @@ def test_swaph_server():
 
     for question, conv_id in questions:
         payload = json.dumps({"question": question, "conversation_id": conv_id})
+        start_time = time.time()
         response = requests.post(url, headers=headers, data=payload)
+        end_time = time.time()
+        print(f"{Colors.OKGREEN}请求时间: {end_time - start_time}秒{Colors.ENDC}")
         
         if response.status_code == 200:
             result = response.json()

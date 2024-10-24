@@ -7,3 +7,4 @@ langgraph==0.2.39
 langsmith==0.1.137
 pytz==2024.2
 duckduckgo-search==6.3.2
+flask

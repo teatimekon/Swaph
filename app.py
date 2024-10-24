@@ -27,4 +27,4 @@ def ask_question():
     return jsonify(response)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5001)

@@ -49,6 +49,12 @@ class Swaph:
     def invoke(self, question: str, conversation_id: str) -> Dict[str, Any]:
         config = {"configurable": {"thread_id": conversation_id}}
         ans = self.graph.invoke({"question": question}, config=config)
+        
+        # 打印执行时间统计
+        if "execution_times" in ans:
+            print("\n执行时间统计:")
+            for agent_name, exec_time in ans["execution_times"].items():
+                print(f"{agent_name}: {exec_time:.2f}秒")
         return ans
 
     def pretty_print_messages(self, messages: List[Any]):
