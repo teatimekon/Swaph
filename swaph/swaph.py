@@ -8,6 +8,7 @@ from graph.AgentGraph import AgentGraph
 from config.prompt_class import Prompt
 from typing import List, Dict, Any
 from tool import ToolRegistry
+from langchain_core.messages import AIMessageChunk
 class Swaph:
     def __init__(self):
         self.agent_factory = AgentFactory()
@@ -56,7 +57,18 @@ class Swaph:
             for agent_name, exec_time in ans["execution_times"].items():
                 print(f"{agent_name}: {exec_time:.2f}秒")
         return ans
-
+    
+    def stream(self,question:str,conversation_id:str):
+        config = {"configurable": {"thread_id": conversation_id}}
+        stream_response = self.graph.stream({"question": question}, config=config, stream_mode="messages")
+        for message, metadata in stream_response:
+            # 只处理 AIMessageChunk 类型的消息
+            if isinstance(message, AIMessageChunk):
+                # 你可以在这里添加任何需要的处理逻辑
+                processed_content = message.content
+                # 使用 yield 返回处理后的内容
+                yield processed_content
+                
     def pretty_print_messages(self, messages: List[Any]):
         for message in messages:
             message.pretty_print()

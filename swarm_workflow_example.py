@@ -5,7 +5,7 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph,START,END
 from langgraph.checkpoint.memory import MemorySaver
 from graph.AgentGraph import AgentGraph
-
+import asyncio
 @tool
 def handle_kodo_question():
     """ 
@@ -57,13 +57,14 @@ print("图片已保存为 graph.png")
 config = {"configurable": {"thread_id": "1"}}
 
 
+
+from langchain_core.messages import SystemMessage,HumanMessage,AIMessageChunk
 while True:
     question = input("请输入问题：")
-    ans = graph.invoke({"question": question},config=config)
-    for message in ans["messages"]:
-        message.pretty_print()
-    print("next_agent: ",ans["next_agent"])
-    print("state: ",ans)
-    print("--------------------------------")
+    for msg,metadata in graph.stream({"question": question}, config=config, stream_mode="messages"):
+        if isinstance(msg,AIMessageChunk):
+            print(msg.content,end="｜",flush=True)
+
+
     
         
