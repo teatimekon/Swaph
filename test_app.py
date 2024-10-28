@@ -11,6 +11,9 @@ def test_swaph_server():
         ("第三呢？", "conv1"),
         ("第二呢？", "conv2")
     ]
+    init_url = "http://localhost:5001/init"
+    init_payload = json.dumps({"model": "gpt-4o-mini"})
+    requests.post(init_url, headers=headers, data=init_payload)
 
     for question, conv_id in questions:
         payload = json.dumps({"question": question, "conversation_id": conv_id})

@@ -3,14 +3,17 @@ from swaph.swaph import Swaph
 
 app = Flask(__name__)
 swaph = Swaph()
-swaph.setup()
 
+@app.route('/init', methods=['POST'])
+def init():
+    model = request.json.get('model')
+    swaph.setup(model)
+    return jsonify({"message": "Model initialized"}), 200
 @app.route('/ask', methods=['POST'])
 def ask_question():
     data = request.json
     question = data.get('question')
     conversation_id = data.get('conversation_id')
-    
     if not question or not conversation_id:
         return jsonify({"error": "No question or conversation_id provided"}), 400
     

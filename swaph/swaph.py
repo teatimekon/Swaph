@@ -17,18 +17,20 @@ class Swaph:
         self.config = {"configurable": {"thread_id": "1"}}
 
 
-    def create_agents(self):
+    def create_agents(self,model="gpt-4o-mini"):
         router_agent = Agent(name="router_agent",
-                             model="gpt-4o-mini",
+                             model=model,
                              next_agents=["search_agent", "kodo_agent"],
-                             instruction="你是路由专家，能根据用户的问题，将用户的问题转移到对应的 agent",
-                             sop=Prompt.get_prompt(name="router"))
+                            #  instruction="你是路由专家，能根据用户的问题，将用户的问题转移到对应的 agent",
+                            instruction="你是智能助手"
+                            #  sop=Prompt.get_prompt(name="router")
+                             )
         kodo_agent = Agent(name="kodo_agent",
-                           model="gpt-4o-mini",
+                           model=model,
                            tools=[ToolRegistry.get_tool("download_file"),ToolRegistry.get_tool("upload_file")],
                            instruction="你是kodo的专家，能处理kodo相关的问题，例如：如何上传文件到kodo，如何下载文件到kodo，如何删除文件到kodo，如何查询文件到kodo，如何添加文件到kodo")
         search_agent = Agent(name="search_agent",
-                          model="gpt-4o-mini",
+                          model=model,
                           tools=[ToolRegistry.get_tool("search_tool")],
                           instruction="你是搜索引擎的专家，能处理搜索引擎相关的问题，例如：如何搜索，如何查询，如何删除，如何添加")
 
@@ -69,12 +71,26 @@ class Swaph:
                 # 使用 yield 返回处理后的内容
                 yield processed_content
                 
+                
+    async def astream(self, question:str, conversation_id:str):
+        config = {"configurable": {"thread_id": conversation_id}}
+        stream_response = self.graph.astream(
+            {"question": question}, 
+            config=config,
+            stream_mode="messages"
+        )
+        async for message, metadata in stream_response:
+            print(message)
+            if isinstance(message, AIMessageChunk):
+            
+                yield message.content
+                
     def pretty_print_messages(self, messages: List[Any]):
         for message in messages:
             message.pretty_print()
 
-    def setup(self):
-        self.create_agents()
+    def setup(self,model="gpt-4o-mini"):
+        self.create_agents(model)
         self.initialize_graph()
         self.save_graph_image()
 

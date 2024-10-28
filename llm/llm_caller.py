@@ -23,7 +23,15 @@ class LLMCaller:
         execution_time = end_time - start_time
         print(f"{Colors.OKGREEN}LLM 执行时间: {execution_time:.2f}秒{Colors.ENDC}")
         return ai_msg
-    
+    async def astream(self, messages, tool_call=False, **kwargs):
+        llm_to_use = self.llm_with_tool if tool_call else self.llm
+        if "parallel_tool_calls" in kwargs:
+            llm_to_use = llm_to_use.bind_tools(self.tools,**kwargs)
+            
+        stream = await llm_to_use.astream(messages, **kwargs)
+        async for chunk in stream:
+            yield chunk
+            
     def bind_tools(self, tools:list[BaseTool]):
         self.tools.append(tools)
         self.llm_with_tool = self.llm.bind_tools(tools)

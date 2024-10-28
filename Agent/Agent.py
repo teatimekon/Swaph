@@ -120,3 +120,55 @@ class Agent(BaseModel):
             messages = messages + [ai_msg]
             
         return {'question': question,'messages': messages,'next_agent': next_agent}
+
+    async def astream(self, state:AgentState):
+        question = state["question"]
+        query = [{"role": "user", "content": "用户的问题是：" + question}]
+        if self.is_initialized:
+            self.is_initialized = False
+            query = [{"role": "system", "content": self.instruction + self.sop}] + query
+        history = state["messages"]
+        messages = history + query
+        
+        # 收集完整的 AI 消息
+        ai_msg = None
+        first = True
+        
+        # 流式调用 LLM 并实时产出 token
+        async for chunk in self.llm_caller.astream(messages=messages,tool_call=True):
+            if first:
+                ai_msg = chunk
+                first = False
+            else:
+                ai_msg = ai_msg + chunk
+            yield chunk
+
+        # 处理工具调用
+        next_agent = self.name  # 默认不转移
+        if hasattr(ai_msg, "tool_calls") and len(ai_msg.tool_calls) > 0:
+            tool_call = ai_msg.tool_calls[0]
+            func_name = tool_call["name"]
+            args = tool_call["args"]
+            print(f"Selected tool: {func_name}")
+            tool_response = self.tool_map[func_name].invoke(args)
+            
+            if isinstance(tool_response, Agent):
+                next_agent = tool_response.name
+            else:
+                tool_message = {
+                    "tool_call_id": tool_call["id"],
+                    "role": "tool", 
+                    "name": func_name,
+                    "content": tool_response
+                }
+                messages = messages + [ai_msg,tool_message]
+                
+                # 再次流式调用 LLM
+                async for chunk in self.llm_caller.astream(messages=messages,tool_call=True):
+                    yield chunk
+                
+        else:
+            print(f"{Colors.BOLD}ai_msg: {ai_msg.content}{Colors.ENDC}")
+            messages = messages + [ai_msg]
+            
+        yield {'question': question,'messages': messages,'next_agent': next_agent}
