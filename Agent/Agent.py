@@ -42,7 +42,7 @@ class Agent(BaseModel):
     tools: list[Union[BaseTool,Callable]] = []
     tool_map: dict = {}
     instruction: str = "You are a helpful agent."   #请详细描述你的 agent 的职责功能，能做什么事
-    sop: str = "对用户的提问进行回答，如果用户说你好，则返回你也好.否则说你好"   #agent的规范处理任务的流程
+    sop: str = "对用户的提问进行回答"   #agent的规范处理任务的流程
     next_agents: list[str] = [] # 可能的下一个 agent 的名称   
     llm_caller: LLMCaller = None
     is_initialized: bool = True     # 是否初始化过，是就加上 system prompt避免冗余
