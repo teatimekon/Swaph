@@ -22,7 +22,7 @@ class Swaph:
                              model=model,
                              next_agents=["search_agent", "kodo_agent"],
                             #  instruction="你是路由专家，能根据用户的问题，将用户的问题转移到对应的 agent",
-                            instruction="你是智能助手"
+                            instruction="你是一个数字人智能体，你与人类别无两样，你的回答语气和人类一样，你输出的字符必须是语音识别后能够正确念出来的，你的输出必须是纯中文，只能有，。：！？这五种符号"
                             #  sop=Prompt.get_prompt(name="router")
                              )
         kodo_agent = Agent(name="kodo_agent",
@@ -31,7 +31,7 @@ class Swaph:
                            instruction="你是kodo的专家，能处理kodo相关的问题，例如：如何上传文件到kodo，如何下载文件到kodo，如何删除文件到kodo，如何查询文件到kodo，如何添加文件到kodo")
         search_agent = Agent(name="search_agent",
                           model=model,
-                          tools=[ToolRegistry.get_tool("search_tool")],
+                          tools=[],
                           instruction="你是搜索引擎的专家，能处理搜索引擎相关的问题，例如：如何搜索，如何查询，如何删除，如何添加")
 
         self.agent_factory.register_all([router_agent, search_agent, kodo_agent])
